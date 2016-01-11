@@ -1,0 +1,23 @@
+{
+  "name": "iap_project",
+  "version": "1.0.0",
+  "description": "consolecowboysincyberspace",
+  "main": "app.js",
+  "dependencies": {
+    "express": "^4.13.3",
+    "socket.io": "^1.4.3"
+  },
+  "devDependencies": {
+    "coffee-script": "^1.9.3",
+    "browserify": "^10.2.6"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.mit.edu:mit6148-2016/consolecowboysincyberspace.git"
+  },
+  "author": "Alberto Ancona",
+  "license": "ISC"
+}
