@@ -26,9 +26,9 @@
       this.reset();
       this.lastLevel = this.getLevelByIndex(this.nodes.length - 1);
       this.startIndexOfLevel = (function() {
-        var j, ref, results;
+        var k, ref, results;
         results = [];
-        for (level = j = 0, ref = this.lastLevel; 0 <= ref ? j <= ref : j >= ref; level = 0 <= ref ? ++j : --j) {
+        for (level = k = 0, ref = this.lastLevel; 0 <= ref ? k <= ref : k >= ref; level = 0 <= ref ? ++k : --k) {
           results.push((Math.pow(2, 2 * level) - 1) / 3);
         }
         return results;
@@ -65,7 +65,7 @@
     };
 
     Quadtree.prototype.getChildIndicesByIndex = function(index) {
-      var childPositionInLevel, i, j, level, results, start;
+      var childPositionInLevel, i, k, level, results, start;
       level = this.getLevelByIndex(index);
       if (level === this.lastLevel) {
         return [];
@@ -73,18 +73,18 @@
       start = this.startIndexOfLevel[level + 1];
       childPositionInLevel = 4 * this.getPositionInLevel(index, level);
       results = [];
-      for (i = j = 0; j < 4; i = ++j) {
+      for (i = k = 0; k < 4; i = ++k) {
         results.push(start + childPositionInLevel + i);
       }
       return results;
     };
 
     Quadtree.prototype.getValidChildIndicesByIndex = function(index) {
-      var j, len, ref, results;
+      var k, len, ref, results;
       ref = this.getChildIndicesByIndex;
       results = [];
-      for (j = 0, len = ref.length; j < len; j++) {
-        index = ref[j];
+      for (k = 0, len = ref.length; k < len; k++) {
+        index = ref[k];
         if (index in this.nodes) {
           results.push(index);
         }
@@ -160,6 +160,9 @@
     extend(ParticleTree, superClass);
 
     function ParticleTree() {
+      this.update = bind(this.update, this);
+      this._moveParticles = bind(this._moveParticles, this);
+      this._accelerateParticles = bind(this._accelerateParticles, this);
       this._sumForces = bind(this._sumForces, this);
       this._intercepts = bind(this._intercepts, this);
       this._maintainCentroids = bind(this._maintainCentroids, this);
@@ -190,16 +193,16 @@
 
     ParticleTree.prototype._particle_count = 0;
 
-    ParticleTree.prototype.addParticle = function(x, y, vx, vy, mass) {
+    ParticleTree.prototype.addParticle = function(x, y, mass, vx, vy) {
       var id, index, particle;
+      if (mass == null) {
+        mass = 1;
+      }
       if (vx == null) {
         vx = 0;
       }
       if (vy == null) {
         vy = 0;
-      }
-      if (mass == null) {
-        mass = 1;
       }
       if (this._particle_count >= this.MAX_PARTICLES) {
         return false;
@@ -219,19 +222,21 @@
       }
       this._maintainCentroids(index);
       this._particle_count += 1;
+      assert(int(this.nodes[index][this._PARTICLES][id][this._X]) === this.nodes[index][this._X] && int(this.nodes[index][this._PARTICLES][id][this._Y]) === this.nodes[index][this._Y]);
       return true;
     };
 
     ParticleTree.prototype.removeParticle = function(x, y, id) {
-      var index;
+      var index, particle;
       index = this.convertCoordinatesToIndex(x, y);
       if (index in this.nodes && id in this.nodes[index][this._PARTICLES]) {
         this.nodes[index][this._MASS] -= this.nodes[index][this._PARTICLES][id][this._MASS];
+        particle = this.nodes[index][this._PARTICLES][id];
         delete this.nodes[index][this._PARTICLES][id];
         this._maintainCentroids(index);
         this._removeUnusedNodes(index);
         this._particle_count -= 1;
-        return true;
+        return particle;
       }
       return false;
     };
@@ -249,17 +254,17 @@
     };
 
     ParticleTree.prototype._maintainCentroids = function(index) {
-      var base, base1, childIndex, j, k, len, name, name1, numChildren, property, ref, ref1;
+      var base, base1, childIndex, k, l, len, name, name1, numChildren, property, ref, ref1;
       this.verifyIndex(index);
       while (!this.isRoot(index)) {
         index = this.getParentIndexByIndex(index);
         this.nodes[index] = [0, 0, 0];
         numChildren = 0;
         ref = this.getValidChildIndicesByIndex(index);
-        for (j = 0, len = ref.length; j < len; j++) {
-          childIndex = ref[j];
+        for (k = 0, len = ref.length; k < len; k++) {
+          childIndex = ref[k];
           numChildren += 1;
-          for (property = k = 0, ref1 = this.nodes[index].length; 0 <= ref1 ? k < ref1 : k > ref1; property = 0 <= ref1 ? ++k : --k) {
+          for (property = l = 0, ref1 = this.nodes[index].length; 0 <= ref1 ? l < ref1 : l > ref1; property = 0 <= ref1 ? ++l : --l) {
             this.nodes[index][property] += this.nodes[childIndex][property];
           }
         }
@@ -268,18 +273,21 @@
       }
     };
 
-    ParticleTree.prototype._intercepts = function(x, y, index) {
-      var indexOnLevel, level, nodeX, nodeY, ref, ref1, ref2, ref3, ref4, size;
+    ParticleTree.prototype._intercepts = function(x0, y0, index) {
+      var indexOnLevel, level, nodeX, nodeY, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, size;
       level = this.getLevelByIndex(index);
       indexOnLevel = index - this.startIndexOfLevel[level];
       ref = this.convertIndexToCoordinates(indexOnLevel), nodeX = ref[0], nodeY = ref[1];
       size = this.size / Math.pow(2, level);
       nodeX *= size;
       nodeY *= size;
-      if ((nodeX < x && x < nodeX + size) || (nodeY < y && y < nodeY + size)) {
+      if ((nodeX < x0 && x0 < nodeX + size) || (nodeY < y0 && y0 < nodeY + size)) {
         return true;
       }
-      if ((nodeX < (ref1 = nodeY + x - y) && ref1 < nodeX + size) || (nodeX < (ref2 = nodeY + size + x - y) && ref2 < nodeX + size) || (nodeY < (ref3 = nodeX - x + y) && ref3 < nodeY + size) || (nodeY < (ref4 = nodeX + size - x + y) && ref4 < nodeY + size)) {
+      if ((nodeX < (ref1 = nodeY + x0 - y0) && ref1 < (nodeX + size)) || (nodeX < (ref2 = nodeY + size + x0 - y0) && ref2 < (nodeX + size)) || (nodeY < (ref3 = nodeX - x0 + y0) && ref3 < (nodeY + size)) || (nodeY < (ref4 = nodeX + size - x0 + y0) && ref4 < (nodeY + size))) {
+        return true;
+      }
+      if ((nodeX < (ref5 = -nodeY + x0 - y0) && ref5 < (nodeX + size)) || (nodeX < (ref6 = -(nodeY + size) + x0 + y0) && ref6 < (nodeX + size)) || (nodeY < (ref7 = nodeX + x0 + y0) && ref7 < (nodeY + size)) || (nodeY < (ref8 = -(nodeX + size) + x0 + y0) && ref8 < (nodeY + size))) {
         return true;
       }
       return false;
@@ -288,31 +296,31 @@
     ParticleTree.prototype._sumForces = function(x, y, id) {
       var getForce;
       getForce = function(index) {
-        var childForces, force, forceX, forceY, gMassR2, i, j, len, node, r2;
+        var childForces, force, forceX, forceY, gMassR2, i, k, len, node, r2;
         if (index == null) {
           index = 0;
         }
         if (this._intercepts(x, y, index)) {
           childForces = (function() {
-            var j, len, ref, results;
+            var k, len, ref, results;
             ref = this.getValidChildIndicesByIndex(index);
             results = [];
-            for (j = 0, len = ref.length; j < len; j++) {
-              i = ref[j];
+            for (k = 0, len = ref.length; k < len; k++) {
+              i = ref[k];
               results.push(getForce(i));
             }
             return results;
           }).call(this);
           forceX = 0;
           forceY = 0;
-          for (j = 0, len = childForces.length; j < len; j++) {
-            force = childForces[j];
+          for (k = 0, len = childForces.length; k < len; k++) {
+            force = childForces[k];
             forceX += force[0];
             forceY += force[1];
           }
         } else {
           node = this.nodes[index];
-          r2 = Math.pow(x - node[this._X], 2) + Math.pow(y - node[this._Y], 2);
+          r2 = Math.min(.01, Math.pow(x - node[this._X], 2) + Math.pow(y - node[this._Y], 2));
           gMassR2 = this._G * node[this._MASS] / r2;
           forceX = (node[this._X] - x) * gMassR2;
           forceY = (node[this._Y] - y) * gMassR2;
@@ -320,6 +328,87 @@
         return [forceX, forceY];
       };
       return getForce();
+    };
+
+    ParticleTree.prototype._accelerateParticles = function(timeSteps, index) {
+      var ax, ay, i, id, k, len, particle, ref, ref1, ref2, x, y;
+      if (index == null) {
+        index = 0;
+      }
+      if (this.isLeaf(index)) {
+        x = this.nodes[index][this._X];
+        y = this.nodes[index][this._Y];
+        ref = this.nodes[index][this._PARTICLES];
+        for (id in ref) {
+          if (!hasProp.call(ref, id)) continue;
+          particle = ref[id];
+          ref1 = this._sumForces(x, y, id), ax = ref1[0], ay = ref1[1];
+          particle[this._VX] += ax * timeSteps;
+          particle[this._VY] += ay * timeSteps;
+        }
+      } else {
+        ref2 = this.getValidChildIndicesByIndex(index);
+        for (k = 0, len = ref2.length; k < len; k++) {
+          i = ref2[k];
+          _accelerateParticles(timeSteps, i);
+        }
+      }
+    };
+
+    ParticleTree.prototype._moveParticles = function(timeSteps, index) {
+      var addVelocities, fixTree;
+      if (index == null) {
+        index = 0;
+      }
+      addVelocities = function(i) {
+        var id, j, k, len, particle, ref, ref1, x, y;
+        if (this.isLeaf(i)) {
+          x = this.nodes[i][this._X];
+          y = this.nodes[i][this._Y];
+          ref = this.nodes[i][this._PARTICLES];
+          for (id in ref) {
+            if (!hasProp.call(ref, id)) continue;
+            particle = ref[id];
+            particle[this._X] += particle[this._VX] * timeSteps;
+            particle[this._Y] += particle[this._VY] * timeSteps;
+          }
+        } else {
+          ref1 = this.getValidChildIndicesByIndex(i);
+          for (k = 0, len = ref1.length; k < len; k++) {
+            j = ref1[k];
+            addVelocities(j);
+          }
+        }
+      };
+      addVelocities(index);
+      fixTree = function(i) {
+        var id, j, k, len, particle, ref, ref1, x, y;
+        if (this.isLeaf(i)) {
+          x = this.nodes[i][this._X];
+          y = this.nodes[i][this._Y];
+          ref = this.nodes[i][this._PARTICLES];
+          for (id in ref) {
+            if (!hasProp.call(ref, id)) continue;
+            particle = ref[id];
+            if (int(particle[this._X]) !== x || int(particle[this._Y]) !== y) {
+              this.removeParticle(x, y, id);
+              this.addParticle.apply(this, particle);
+            }
+          }
+        } else {
+          ref1 = this.getValidChildIndicesByIndex(i);
+          for (k = 0, len = ref1.length; k < len; k++) {
+            j = ref1[k];
+            fixTree(j);
+          }
+        }
+      };
+      fixTree(index);
+    };
+
+    ParticleTree.prototype.update = function(timeSteps) {
+      this._accelerateParticles(timeSteps);
+      this._moveParticles(timeSteps);
     };
 
     return ParticleTree;

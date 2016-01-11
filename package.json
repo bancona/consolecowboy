@@ -12,7 +12,10 @@
     "browserify": "^10.2.6"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "coffee -c . && browserify client/game-client.js -o public/js/bundle.js",
+    "devstart": "npm run prepublish && npm start"
   },
   "repository": {
     "type": "git",

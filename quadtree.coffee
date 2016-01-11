@@ -136,7 +136,7 @@ class ParticleTree extends Quadtree
   # Adds particle to tree then updates centroids up through the tree from the
   # leaf where the particle was added to the root. Returns true iff particle was
   # successfully added, that is, if the particle count is less than the max.
-  addParticle: (x, y, vx = 0, vy = 0, mass = 1) =>
+  addParticle: (x, y, mass = 1, vx = 0, vy = 0) =>
     if @_particle_count >= @MAX_PARTICLES
       return false
     index = @convertCoordinatesToIndex x, y
@@ -149,20 +149,25 @@ class ParticleTree extends Quadtree
       @nodes[index] = [int(x), int(y), mass, {id: particle}]
     @_maintainCentroids index
     @_particle_count += 1
+
+    assert int(@nodes[index][@_PARTICLES][id][@_X]) is @nodes[index][@_X] and \
+           int(@nodes[index][@_PARTICLES][id][@_Y]) is @nodes[index][@_Y]
+
     true
 
   # Removes particle from leaf, then updates centroids up through the tree, then
-  # deletes unused nodes starting at the leaf. Returns true iff particle was
-  # successfully removed.
+  # deletes unused nodes starting at the leaf. Returns particle iff particle
+  # was successfully removed, else returns false.
   removeParticle: (x, y, id) =>
     index = @convertCoordinatesToIndex x, y
     if index of @nodes and id of @nodes[index][@_PARTICLES]
       @nodes[index][@_MASS] -= @nodes[index][@_PARTICLES][id][@_MASS]
+      particle = @nodes[index][@_PARTICLES][id]
       delete @nodes[index][@_PARTICLES][id]
       @_maintainCentroids index
       @_removeUnusedNodes index
       @_particle_count -= 1
-      return true
+      return particle
     false
 
   # Generates new particle ID String and returns it.
@@ -196,7 +201,9 @@ class ParticleTree extends Quadtree
       @nodes[index][@_Y] //= numChildren
     return
 
-  _intercepts: (x, y, index) =>
+  # Checks if quadrant represented by node at index intersects any of the lines
+  # x = x0, y = y0, y - y0 = x - x0, and y - y0 = -x + x0.
+  _intercepts: (x0, y0, index) =>
     level = @getLevelByIndex index
     indexOnLevel = index - @startIndexOfLevel[level]
     [nodeX, nodeY] = @convertIndexToCoordinates indexOnLevel
@@ -204,13 +211,18 @@ class ParticleTree extends Quadtree
     nodeX *= size
     nodeY *= size
     # Check horizontal and vertical:
-    if nodeX < x < nodeX + size or nodeY < y < nodeY + size
+    if nodeX < x0 < nodeX + size or nodeY < y0 < nodeY + size
       return true
     # Check diagonals
-    if nodeX < nodeY + x - y < nodeX + size or \
-       nodeX < nodeY + size + x - y < nodeX + size or \
-       nodeY < nodeX - x + y < nodeY + size or \
-       nodeY < nodeX + size - x + y < nodeY + size
+    if nodeX < (nodeY + x0 - y0) < (nodeX + size) or \
+       nodeX < (nodeY + size + x0 - y0) < (nodeX + size) or \
+       nodeY < (nodeX - x0 + y0) < (nodeY + size) or \
+       nodeY < (nodeX + size - x0 + y0) < (nodeY + size)
+      return true
+    if nodeX < (-nodeY + x0 - y0) < (nodeX + size) or \
+       nodeX < (-(nodeY + size) + x0 + y0) < (nodeX + size) or \
+       nodeY < (nodeX + x0 + y0) < (nodeY + size) or \
+       nodeY < (-(nodeX + size) + x0 + y0) < (nodeY + size)
       return true
     false
 
@@ -226,9 +238,55 @@ class ParticleTree extends Quadtree
           forceY += force[1]
       else
         node = @nodes[index]
-        r2 = (x - node[@_X])**2 + (y - node[@_Y])**2
+        r2 = Math.min .01, (x - node[@_X])**2 + (y - node[@_Y])**2
         gMassR2 = @_G * node[@_MASS] / r2
         forceX = (node[@_X] - x) * gMassR2
         forceY = (node[@_Y] - y) * gMassR2
       [forceX, forceY]
     getForce()
+
+  _accelerateParticles: (timeSteps, index = 0) =>
+    if @isLeaf index
+      x = @nodes[index][@_X]
+      y = @nodes[index][@_Y]
+      for own id, particle of @nodes[index][@_PARTICLES]
+        [ax, ay] = @_sumForces x, y, id
+        particle[@_VX] += ax * timeSteps
+        particle[@_VY] += ay * timeSteps
+    else
+      for i in @getValidChildIndicesByIndex index
+        _accelerateParticles(timeSteps, i)
+    return
+
+  _moveParticles: (timeSteps, index = 0) =>
+    addVelocities = (i) ->
+      if @isLeaf i
+        x = @nodes[i][@_X]
+        y = @nodes[i][@_Y]
+        for own id, particle of @nodes[i][@_PARTICLES]
+          particle[@_X] += particle[@_VX] * timeSteps
+          particle[@_Y] += particle[@_VY] * timeSteps
+      else
+        for j in @getValidChildIndicesByIndex i
+          addVelocities j
+      return
+    addVelocities index
+    fixTree = (i) ->
+      if @isLeaf i
+        x = @nodes[i][@_X]
+        y = @nodes[i][@_Y]
+        for own id, particle of @nodes[i][@_PARTICLES]
+          if int(particle[@_X]) isnt x or int(particle[@_Y]) isnt y
+            @removeParticle x, y, id
+            @addParticle particle...
+      else
+        for j in @getValidChildIndicesByIndex i
+          fixTree j
+      return
+    fixTree index
+    return
+
+  update: (timeSteps) =>
+    @_accelerateParticles timeSteps
+    @_moveParticles timeSteps
+    return
