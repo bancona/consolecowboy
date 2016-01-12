@@ -25,7 +25,7 @@ class Quadtree
     if (@size //= 1) <= 0 or @size & (@size - 1)
       throw new Error 'Quadtree size must be a positive power of 2.'
 
-    @nodes = {0: [0, 0, 0, {}]}
+    @nodes = '0': [0, 0, 0, {}]
     @lastLevel = log2 @size
     @startIndexOfLevel = ((2**(2 * level) - 1) / 3 for level in [0..@lastLevel])
     @maxNodes = (4 * @size**2 - 1) / 3
@@ -100,9 +100,9 @@ class Quadtree
     index -= @startIndexOfLevel[@lastLevel]
 
     while c <= index
-      y |= c & index
-      index >>= 1
       x |= c & index
+      index >>= 1
+      y |= c & index
       c <<= 1
 
     [x, y]
@@ -129,7 +129,7 @@ class Quadtree
     return
 
 class ParticleTree extends Quadtree
-  constructor: (@size) ->
+  constructor: (@size, @bounds) ->
     super @size
 
     @_X = 0
@@ -139,33 +139,34 @@ class ParticleTree extends Quadtree
     @_VX = 3
     @_VY = 4
 
-    @_G = 1
+    @_G = .1
 
     @MAX_PARTICLES = 1000
+    @MAX_VELOCITY = 15
 
     @_particleID = 0
-    @_particle_count = 0
+    @_particleCount = 0
 
   # Adds particle to tree then updates centroids up through the tree from the
   # leaf where the particle was added to the root. Returns true iff particle was
   # successfully added, that is, if the particle count is less than the max.
-  addParticle: (x, y, mass = 1, vx = 0, vy = 0) ->
-    if @_particle_count >= @MAX_PARTICLES
+  addParticle: (x, y, mass = 1, vx = 0, vy = 0, id = undefined) ->
+    if @_particleCount >= @MAX_PARTICLES
       return false
     try
       index = @convertCoordinatesToIndex x, y
     catch error
       #console.log error.message
       return false
-    id = @_getNewID()
+    id ?= @_getNewID()
     particle = [x, y, mass, vx, vy]
     if index of @nodes
       @nodes[index][@_MASS] += mass
       @nodes[index][@_PARTICLES][id] = particle
     else
-      @nodes[index] = [x // 1, y // 1, mass, {"#{id}": particle}]
+      @nodes[index] = [x // 1, y // 1, mass, "#{id}": particle]
     @_maintainCentroids index
-    @_particle_count += 1
+    @_particleCount += 1
 
     true
 
@@ -180,13 +181,13 @@ class ParticleTree extends Quadtree
       delete @nodes[index][@_PARTICLES][id]
       @_maintainCentroids index
       @_removeUnusedNodes index
-      @_particle_count -= 1
+      @_particleCount -= 1
       return particle
     false
 
   # Generates new particle ID String and returns it.
   _getNewID: ->
-    (@_particleID += 1).toString()
+    ((@_particleID += 1) % @MAX_PARTICLES).toString()
 
   # Goes from index upward through the tree until the root, deleting node
   # indices from @nodes if the mass at that node is 0. Stops iterating when it
@@ -270,6 +271,12 @@ class ParticleTree extends Quadtree
         [ax, ay] = @_sumForces x, y, id
         particle[@_VX] += ax * timeSteps
         particle[@_VY] += ay * timeSteps
+        if Math.abs(particle[@_VX]) > @MAX_VELOCITY
+          sign = if particle[@_VX] >= 0 then 1 else -1
+          particle[@_VX] = sign * @MAX_VELOCITY
+        if Math.abs(particle[@_VY]) > @MAX_VELOCITY
+          sign = if particle[@_VY] >= 0 then 1 else -1
+          particle[@_VY] = sign * @MAX_VELOCITY
     else
       for i in @getValidChildIndicesByIndex index
         @_accelerateParticles(timeSteps, i)
@@ -283,6 +290,12 @@ class ParticleTree extends Quadtree
         for own id, particle of @nodes[i][@_PARTICLES]
           particle[@_X] += (particle[@_VX] or 0) * timeSteps
           particle[@_Y] += (particle[@_VY] or 0) * timeSteps
+          unless @bounds.x <= particle[@_X] < @bounds.x + @bounds.width
+            particle[@_X] -= particle[@_VX] * timeSteps
+            particle[@_VX] *= -1
+          unless @bounds.y <= particle[@_Y] < @bounds.y + @bounds.height
+            particle[@_Y] -= particle[@_VY] * timeSteps
+            particle[@_VY] *= -1
       else
         for j in @getValidChildIndicesByIndex i
           addVelocities j
@@ -295,7 +308,7 @@ class ParticleTree extends Quadtree
         for own id, particle of @nodes[i][@_PARTICLES]
           if particle[@_X] // 1 isnt x or particle[@_Y] // 1 isnt y
             particle = @removeParticle x, y, id
-            @addParticle particle...
+            @addParticle particle..., id
       else
         for j in @getValidChildIndicesByIndex i
           fixTree j
@@ -303,7 +316,32 @@ class ParticleTree extends Quadtree
     fixTree index
     return
 
+  _combineParticles: (index) ->
+    if @isLeaf(index) and Object.keys(@nodes[index][@_PARTICLES]).length > 1
+      # m0*v0 + m1*v1 == (m0+m1)*vf --> vf == (m0*v0 + m1*v1) / (m0+m1)
+      mass = 0
+      combinedID = null
+      momentumX = 0
+      momentumY = 0
+      count = -1
+      for own id, particle of @nodes[index][@_PARTICLES]
+        count += 1
+        combinedID = id
+        momentumX += particle[@_MASS] * particle[@_VX]
+        momentumY += particle[@_MASS] * particle[@_VY]
+        mass += particle[@_MASS]
+      vx = momentumX / mass
+      vy = momentumY / mass
+      [x, y] = @convertIndexToCoordinates index
+      @nodes[index][@_PARTICLES] =
+        "#{combinedID}": [x, y, mass, vx, vy]
+      @_particleCount -= count
+    else
+      for i in @getValidChildIndicesByIndex index
+        @_combineParticles i
+
   update: (timeSteps) ->
+    @_combineParticles 0
     @_accelerateParticles timeSteps
     @_moveParticles timeSteps
     return

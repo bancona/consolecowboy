@@ -8,7 +8,12 @@
 
   ParticleTree = require('./quadtree').ParticleTree;
 
-  particleTree = new ParticleTree(config.WIDTH);
+  particleTree = new ParticleTree(config.WIDTH, {
+    x: 0,
+    y: 0,
+    width: 1024,
+    height: 1024
+  });
 
   particleQueue = require('./queue')();
 
@@ -19,6 +24,7 @@
     if (((ref = mouse.originalEvent) != null ? ref.type : void 0) === "mousedown") {
       particleTree.addParticle(mouseLoc.x, mouseLoc.y);
     }
+    console.log("particle count: " + particleTree._particleCount);
     particleTree.update(1);
     Graphics.render(particleTree);
     return requestAnimationFrame(mainLoop);

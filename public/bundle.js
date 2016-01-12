@@ -25,11 +25,9 @@
 
   stage.addChild(gameContainer);
 
-  gameContainer.width = config.WIDTH;
-
-  gameContainer.height = config.HEIGHT;
-
   renderer = PIXI.autoDetectRenderer(config.WIDTH, config.HEIGHT);
+
+  renderer.autoResize = true;
 
   document.body.appendChild(renderer.view);
 
@@ -37,7 +35,6 @@
     return function(particleTree) {
       var drawParticles;
       gameContainer.clear();
-      gameContainer.beginFill(0x00FF00);
       drawParticles = function(index) {
         var childIndices, i, id, j, len, particle, ref, results, results1;
         childIndices = particleTree.getValidChildIndicesByIndex(index);
@@ -46,6 +43,7 @@
           results = [];
           for (id in ref) {
             particle = ref[id];
+            gameContainer.beginFill(0x111111 * particle[2]);
             results.push(gameContainer.drawCircle(particle[0], particle[1], 5));
           }
           return results;
@@ -84,7 +82,12 @@
 
   ParticleTree = require('./quadtree').ParticleTree;
 
-  particleTree = new ParticleTree(config.WIDTH);
+  particleTree = new ParticleTree(config.WIDTH, {
+    x: 0,
+    y: 0,
+    width: 1024,
+    height: 1024
+  });
 
   particleQueue = require('./queue')();
 
@@ -95,6 +98,7 @@
     if (((ref = mouse.originalEvent) != null ? ref.type : void 0) === "mousedown") {
       particleTree.addParticle(mouseLoc.x, mouseLoc.y);
     }
+    console.log("particle count: " + particleTree._particleCount);
     particleTree.update(1);
     Graphics.render(particleTree);
     return requestAnimationFrame(mainLoop);
@@ -109,7 +113,8 @@
 (function() {
   var ParticleTree, Quadtree, log2,
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
+    hasProp = {}.hasOwnProperty,
+    slice = [].slice;
 
   log2 = Math.log2 || function(x) {
     return Math.log(x) / Math.LN2;
@@ -123,7 +128,7 @@
         throw new Error('Quadtree size must be a positive power of 2.');
       }
       this.nodes = {
-        0: [0, 0, 0, {}]
+        '0': [0, 0, 0, {}]
       };
       this.lastLevel = log2(this.size);
       this.startIndexOfLevel = (function() {
@@ -235,9 +240,9 @@
       c = 1;
       index -= this.startIndexOfLevel[this.lastLevel];
       while (c <= index) {
-        y |= c & index;
-        index >>= 1;
         x |= c & index;
+        index >>= 1;
+        y |= c & index;
         c <<= 1;
       }
       return [x, y];
@@ -284,8 +289,9 @@
   ParticleTree = (function(superClass) {
     extend(ParticleTree, superClass);
 
-    function ParticleTree(size1) {
+    function ParticleTree(size1, bounds) {
       this.size = size1;
+      this.bounds = bounds;
       ParticleTree.__super__.constructor.call(this, this.size);
       this._X = 0;
       this._Y = 1;
@@ -293,14 +299,15 @@
       this._PARTICLES = 3;
       this._VX = 3;
       this._VY = 4;
-      this._G = 1;
+      this._G = .1;
       this.MAX_PARTICLES = 1000;
+      this.MAX_VELOCITY = 15;
       this._particleID = 0;
-      this._particle_count = 0;
+      this._particleCount = 0;
     }
 
-    ParticleTree.prototype.addParticle = function(x, y, mass, vx, vy) {
-      var error, id, index, obj, particle;
+    ParticleTree.prototype.addParticle = function(x, y, mass, vx, vy, id) {
+      var error, index, obj, particle;
       if (mass == null) {
         mass = 1;
       }
@@ -310,7 +317,10 @@
       if (vy == null) {
         vy = 0;
       }
-      if (this._particle_count >= this.MAX_PARTICLES) {
+      if (id == null) {
+        id = void 0;
+      }
+      if (this._particleCount >= this.MAX_PARTICLES) {
         return false;
       }
       try {
@@ -319,7 +329,9 @@
         error = _error;
         return false;
       }
-      id = this._getNewID();
+      if (id == null) {
+        id = this._getNewID();
+      }
       particle = [x, y, mass, vx, vy];
       if (index in this.nodes) {
         this.nodes[index][this._MASS] += mass;
@@ -334,7 +346,7 @@
         ];
       }
       this._maintainCentroids(index);
-      this._particle_count += 1;
+      this._particleCount += 1;
       return true;
     };
 
@@ -347,14 +359,14 @@
         delete this.nodes[index][this._PARTICLES][id];
         this._maintainCentroids(index);
         this._removeUnusedNodes(index);
-        this._particle_count -= 1;
+        this._particleCount -= 1;
         return particle;
       }
       return false;
     };
 
     ParticleTree.prototype._getNewID = function() {
-      return (this._particleID += 1).toString();
+      return ((this._particleID += 1) % this.MAX_PARTICLES).toString();
     };
 
     ParticleTree.prototype._removeUnusedNodes = function(index) {
@@ -451,7 +463,7 @@
     };
 
     ParticleTree.prototype._accelerateParticles = function(timeSteps, index) {
-      var ax, ay, i, id, k, len, particle, ref, ref1, ref2, x, y;
+      var ax, ay, i, id, k, len, particle, ref, ref1, ref2, sign, x, y;
       if (index == null) {
         index = 0;
       }
@@ -465,6 +477,14 @@
           ref1 = this._sumForces(x, y, id), ax = ref1[0], ay = ref1[1];
           particle[this._VX] += ax * timeSteps;
           particle[this._VY] += ay * timeSteps;
+          if (Math.abs(particle[this._VX]) > this.MAX_VELOCITY) {
+            sign = particle[this._VX] >= 0 ? 1 : -1;
+            particle[this._VX] = sign * this.MAX_VELOCITY;
+          }
+          if (Math.abs(particle[this._VY]) > this.MAX_VELOCITY) {
+            sign = particle[this._VY] >= 0 ? 1 : -1;
+            particle[this._VY] = sign * this.MAX_VELOCITY;
+          }
         }
       } else {
         ref2 = this.getValidChildIndicesByIndex(index);
@@ -482,7 +502,7 @@
       }
       addVelocities = (function(_this) {
         return function(i) {
-          var id, j, k, len, particle, ref, ref1, x, y;
+          var id, j, k, len, particle, ref, ref1, ref2, ref3, x, y;
           if (_this.isLeaf(i)) {
             x = _this.nodes[i][_this._X];
             y = _this.nodes[i][_this._Y];
@@ -492,11 +512,19 @@
               particle = ref[id];
               particle[_this._X] += (particle[_this._VX] || 0) * timeSteps;
               particle[_this._Y] += (particle[_this._VY] || 0) * timeSteps;
+              if (!((_this.bounds.x <= (ref1 = particle[_this._X]) && ref1 < _this.bounds.x + _this.bounds.width))) {
+                particle[_this._X] -= particle[_this._VX] * timeSteps;
+                particle[_this._VX] *= -1;
+              }
+              if (!((_this.bounds.y <= (ref2 = particle[_this._Y]) && ref2 < _this.bounds.y + _this.bounds.height))) {
+                particle[_this._Y] -= particle[_this._VY] * timeSteps;
+                particle[_this._VY] *= -1;
+              }
             }
           } else {
-            ref1 = _this.getValidChildIndicesByIndex(i);
-            for (k = 0, len = ref1.length; k < len; k++) {
-              j = ref1[k];
+            ref3 = _this.getValidChildIndicesByIndex(i);
+            for (k = 0, len = ref3.length; k < len; k++) {
+              j = ref3[k];
               addVelocities(j);
             }
           }
@@ -515,7 +543,7 @@
               particle = ref[id];
               if (Math.floor(particle[_this._X] / 1) !== x || Math.floor(particle[_this._Y] / 1) !== y) {
                 particle = _this.removeParticle(x, y, id);
-                _this.addParticle.apply(_this, particle);
+                _this.addParticle.apply(_this, slice.call(particle).concat([id]));
               }
             }
           } else {
@@ -530,7 +558,46 @@
       fixTree(index);
     };
 
+    ParticleTree.prototype._combineParticles = function(index) {
+      var combinedID, count, i, id, k, len, mass, momentumX, momentumY, obj, particle, ref, ref1, ref2, results, vx, vy, x, y;
+      if (this.isLeaf(index) && Object.keys(this.nodes[index][this._PARTICLES]).length > 1) {
+        mass = 0;
+        combinedID = null;
+        momentumX = 0;
+        momentumY = 0;
+        count = -1;
+        ref = this.nodes[index][this._PARTICLES];
+        for (id in ref) {
+          if (!hasProp.call(ref, id)) continue;
+          particle = ref[id];
+          count += 1;
+          combinedID = id;
+          momentumX += particle[this._MASS] * particle[this._VX];
+          momentumY += particle[this._MASS] * particle[this._VY];
+          mass += particle[this._MASS];
+        }
+        vx = momentumX / mass;
+        vy = momentumY / mass;
+        ref1 = this.convertIndexToCoordinates(index), x = ref1[0], y = ref1[1];
+        this.nodes[index][this._PARTICLES] = (
+          obj = {},
+          obj["" + combinedID] = [x, y, mass, vx, vy],
+          obj
+        );
+        return this._particleCount -= count;
+      } else {
+        ref2 = this.getValidChildIndicesByIndex(index);
+        results = [];
+        for (k = 0, len = ref2.length; k < len; k++) {
+          i = ref2[k];
+          results.push(this._combineParticles(i));
+        }
+        return results;
+      }
+    };
+
     ParticleTree.prototype.update = function(timeSteps) {
+      this._combineParticles(0);
       this._accelerateParticles(timeSteps);
       this._moveParticles(timeSteps);
     };

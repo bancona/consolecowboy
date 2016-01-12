@@ -12,11 +12,9 @@
 
   stage.addChild(gameContainer);
 
-  gameContainer.width = config.WIDTH;
-
-  gameContainer.height = config.HEIGHT;
-
   renderer = PIXI.autoDetectRenderer(config.WIDTH, config.HEIGHT);
+
+  renderer.autoResize = true;
 
   document.body.appendChild(renderer.view);
 
@@ -24,7 +22,6 @@
     return function(particleTree) {
       var drawParticles;
       gameContainer.clear();
-      gameContainer.beginFill(0x00FF00);
       drawParticles = function(index) {
         var childIndices, i, id, j, len, particle, ref, results, results1;
         childIndices = particleTree.getValidChildIndicesByIndex(index);
@@ -33,6 +30,7 @@
           results = [];
           for (id in ref) {
             particle = ref[id];
+            gameContainer.beginFill(0x111111 * particle[2]);
             results.push(gameContainer.drawCircle(particle[0], particle[1], 5));
           }
           return results;
