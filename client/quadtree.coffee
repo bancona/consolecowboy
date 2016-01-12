@@ -2,6 +2,8 @@
 # Date Created: January 02, 2016
 # Last Modified: January 08, 2016
 
+log2 = Math.log2 or (x) -> Math.log(x) / Math.LN2
+
 # Quadtree Class
 # ---------------------
 # Space quadtree implementation, where each node's four children represent the
@@ -23,34 +25,28 @@ class Quadtree
     if (@size //= 1) <= 0 or @size & (@size - 1)
       throw new Error 'Quadtree size must be a positive power of 2.'
 
-    @reset()
-    @lastLevel = @getLevelByIndex @nodes.length - 1
+    @nodes = {0: [0, 0, 0, {}]}
+    @lastLevel = log2 @size
     @startIndexOfLevel = ((2**(2 * level) - 1) / 3 for level in [0..@lastLevel])
     @maxNodes = (4 * @size**2 - 1) / 3
 
-  # Empties @nodes and returns reference to tree for easy chaining.
-  reset: =>
-    @nodes = {}
-    this
-
   # Returns node corresponding to specified index of @nodes.
   # Returns null if no node with that index exists.
-  getNodeAtIndex: (index) =>
+  getNodeAtIndex: (index) ->
     if index of @nodes then @nodes[index] else null
 
   # Returns 0-indexed level in the quadtree, calculated from @nodes array index.
   getLevelByIndex: (index) ->
-    log2 = Math.log2 or (x) -> Math.log(x) / Math.LN2
     log2(3 * index + 1) // 2
 
   # Returns relative index of node at specified index; that is, if the node is
   # the first in a level, returns 0, if second then return 1, etc.
-  getPositionInLevel: (index, level) =>
+  getPositionInLevel: (index, level) ->
     level ?= @getLevelByIndex index
     index - @startIndexOfLevel[level]
 
   # Returns indices of child nodes (four quadrants contained in index quadrant).
-  getChildIndicesByIndex: (index) =>
+  getChildIndicesByIndex: (index) ->
     level = @getLevelByIndex index
     if level is @lastLevel then return [] # tree leaves have no children
     start = @startIndexOfLevel[level + 1]
@@ -58,22 +54,29 @@ class Quadtree
     (start + childPositionInLevel + i for i in [0...4])
 
   # Returns indices of existent child nodes (non-empty quadrants)
-  getValidChildIndicesByIndex: (index) =>
-    (index for index in @getChildIndicesByIndex when index of @nodes)
+  getValidChildIndicesByIndex: (index) ->
+    (i for i in @getChildIndicesByIndex(index) when i of @nodes)
 
   # Returns index of parent node, which is the quadrant containing the one
   # represented by node at index.
-  getParentIndexByIndex: (index) =>
+  getParentIndexByIndex: (index) ->
     level = @getLevelByIndex index
     parentLevel = level - 1
     @startIndexOfLevel[parentLevel] + @getPositionInLevel(index, level) // 4
 
+  toString: (index = 0) ->
+    representation = "#{index}: #{@nodes[index]}"
+    for i in @getValidChildIndicesByIndex index
+      representation += "\n#{@toString i}"
+    representation
+
   # Returns position in @nodes corresponding to (x, y) position.
   # Mapping from coordinates to indices by Jimmy Zeng, MIT Class of 2018.
-  convertCoordinatesToIndex: (x, y) =>
-    unless 0 <= (x = int x) < @size and 0 <= (y = int y) < @size
+  convertCoordinatesToIndex: (x, y) ->
+    unless 0 <= (x //= 1) < @size and 0 <= (y //= 1) < @size
+      #console.log @toString()
       throw new RangeError "Quadtree.convertCoordinatesToIndex(): Coordinates
-                            must be in range [0, #{@size})."
+                            must be in range [0, #{@size}). Input: (#{x}, #{y})."
     c = 1
     index = 0
 
@@ -88,7 +91,7 @@ class Quadtree
     index + @startIndexOfLevel[@lastLevel]
 
   # Returns (x, y) position represented by index of @nodes
-  convertIndexToCoordinates: (index) =>
+  convertIndexToCoordinates: (index) ->
     @verifyIndex index
 
     x = 0
@@ -104,65 +107,76 @@ class Quadtree
 
     [x, y]
 
-  verifyIndex: (index) =>
-    unless index is int(index) and \
-        @startIndexOfLevel[@lastLevel] <= index < @maxNodes
-      throw new RangeError "Quadtree.verifyIndex(): index must be
-                      in range [#{@startIndexOfLevel[@lastLevel]}, @maxNodes)."
-    return
+  verifyIndex: (index) ->
+    0 <= index < @maxNodes
 
-  isLeaf: (index) =>
-    @verifyIndex index
-    index >= @startIndexOfLevel[@lastLevel]
+  isLeaf: (index) ->
+    isLeafBool = @getLevelByIndex(index) is @lastLevel
+    isLeafBool
 
-  isRoot: (index) =>
+  isRoot: (index) ->
     index is 0
 
+  getLeafIndices: ->
+    leaves = new Set()
+    addLeaves = (index) ->
+      if @isLeaf index
+        leaves.add index
+      else
+        for i in @getValidChildIndicesByIndex index
+          addLeaves i
+    addLeaves 0
+    return
+
 class ParticleTree extends Quadtree
-  @_X = 0
-  @_Y = 1
-  @_MASS = 2
-  @_PARTICLES = 3
-  @_VX = 3
-  @_VY = 4
+  constructor: (@size) ->
+    super @size
 
-  @_G = 1
+    @_X = 0
+    @_Y = 1
+    @_MASS = 2
+    @_PARTICLES = 3
+    @_VX = 3
+    @_VY = 4
 
-  @MAX_PARTICLES = 1000
+    @_G = 1
 
-  _particleID: 0
-  _particle_count: 0
+    @MAX_PARTICLES = 1000
+
+    @_particleID = 0
+    @_particle_count = 0
 
   # Adds particle to tree then updates centroids up through the tree from the
   # leaf where the particle was added to the root. Returns true iff particle was
   # successfully added, that is, if the particle count is less than the max.
-  addParticle: (x, y, mass = 1, vx = 0, vy = 0) =>
+  addParticle: (x, y, mass = 1, vx = 0, vy = 0) ->
     if @_particle_count >= @MAX_PARTICLES
       return false
-    index = @convertCoordinatesToIndex x, y
+    try
+      index = @convertCoordinatesToIndex x, y
+    catch error
+      #console.log error.message
+      return false
     id = @_getNewID()
     particle = [x, y, mass, vx, vy]
     if index of @nodes
       @nodes[index][@_MASS] += mass
       @nodes[index][@_PARTICLES][id] = particle
     else
-      @nodes[index] = [int(x), int(y), mass, {id: particle}]
+      @nodes[index] = [x // 1, y // 1, mass, {"#{id}": particle}]
     @_maintainCentroids index
     @_particle_count += 1
-
-    assert int(@nodes[index][@_PARTICLES][id][@_X]) is @nodes[index][@_X] and \
-           int(@nodes[index][@_PARTICLES][id][@_Y]) is @nodes[index][@_Y]
 
     true
 
   # Removes particle from leaf, then updates centroids up through the tree, then
   # deletes unused nodes starting at the leaf. Returns particle iff particle
   # was successfully removed, else returns false.
-  removeParticle: (x, y, id) =>
+  removeParticle: (x, y, id) ->
     index = @convertCoordinatesToIndex x, y
     if index of @nodes and id of @nodes[index][@_PARTICLES]
       @nodes[index][@_MASS] -= @nodes[index][@_PARTICLES][id][@_MASS]
-      particle = @nodes[index][@_PARTICLES][id]
+      particle = @nodes[index][@_PARTICLES][id].slice 0
       delete @nodes[index][@_PARTICLES][id]
       @_maintainCentroids index
       @_removeUnusedNodes index
@@ -171,13 +185,13 @@ class ParticleTree extends Quadtree
     false
 
   # Generates new particle ID String and returns it.
-  _getNewID: =>
-    (_particleID += 1).toString()
+  _getNewID: ->
+    (@_particleID += 1).toString()
 
   # Goes from index upward through the tree until the root, deleting node
   # indices from @nodes if the mass at that node is 0. Stops iterating when it
   # reaches a node with a non-zero mass.
-  _removeUnusedNodes: (index) =>
+  _removeUnusedNodes: (index) ->
     @verifyIndex index
     until @nodes[index][@_MASS] > 0 or @isRoot index
       delete @nodes[index]
@@ -187,23 +201,26 @@ class ParticleTree extends Quadtree
   # Iterates upward through the tree from index, updating the centroid values of
   # nodes above index by summing the mass and averaging the x and y values of
   # the children of each node.
-  _maintainCentroids: (index) =>
+  _maintainCentroids: (index) ->
     @verifyIndex index
     until @isRoot index
       index = @getParentIndexByIndex index
-      @nodes[index] = [0, 0, 0] # [x, y, mass] of centroid
+      if index of @nodes
+        @nodes[index][i] = 0 for i in [0...3]
+      else
+        @nodes[index] = [0, 0, 0, {}]
       numChildren = 0
       for childIndex in @getValidChildIndicesByIndex index
         numChildren += 1
-        for property in [0...@nodes[index].length]
+        for property in [0...3]
           @nodes[index][property] += @nodes[childIndex][property]
-      @nodes[index][@_X] //= numChildren
-      @nodes[index][@_Y] //= numChildren
+      @nodes[index][@_X] /= numChildren
+      @nodes[index][@_Y] /= numChildren
     return
 
   # Checks if quadrant represented by node at index intersects any of the lines
   # x = x0, y = y0, y - y0 = x - x0, and y - y0 = -x + x0.
-  _intercepts: (x0, y0, index) =>
+  _intercepts: (x0, y0, index) ->
     level = @getLevelByIndex index
     indexOnLevel = index - @startIndexOfLevel[level]
     [nodeX, nodeY] = @convertIndexToCoordinates indexOnLevel
@@ -227,8 +244,8 @@ class ParticleTree extends Quadtree
     false
 
   #
-  _sumForces: (x, y, id) =>
-    getForce = (index = 0) ->
+  _sumForces: (x, y, id) ->
+    getForce = (index = 0) =>
       if @_intercepts x, y, index
         childForces = (getForce(i) for i in @getValidChildIndicesByIndex index)
         forceX = 0
@@ -238,14 +255,14 @@ class ParticleTree extends Quadtree
           forceY += force[1]
       else
         node = @nodes[index]
-        r2 = Math.min .01, (x - node[@_X])**2 + (y - node[@_Y])**2
+        r2 = Math.max .01, (x - node[@_X])**2 + (y - node[@_Y])**2
         gMassR2 = @_G * node[@_MASS] / r2
         forceX = (node[@_X] - x) * gMassR2
         forceY = (node[@_Y] - y) * gMassR2
       [forceX, forceY]
     getForce()
 
-  _accelerateParticles: (timeSteps, index = 0) =>
+  _accelerateParticles: (timeSteps, index = 0) ->
     if @isLeaf index
       x = @nodes[index][@_X]
       y = @nodes[index][@_Y]
@@ -255,29 +272,29 @@ class ParticleTree extends Quadtree
         particle[@_VY] += ay * timeSteps
     else
       for i in @getValidChildIndicesByIndex index
-        _accelerateParticles(timeSteps, i)
+        @_accelerateParticles(timeSteps, i)
     return
 
-  _moveParticles: (timeSteps, index = 0) =>
-    addVelocities = (i) ->
+  _moveParticles: (timeSteps, index = 0) ->
+    addVelocities = (i) =>
       if @isLeaf i
         x = @nodes[i][@_X]
         y = @nodes[i][@_Y]
         for own id, particle of @nodes[i][@_PARTICLES]
-          particle[@_X] += particle[@_VX] * timeSteps
-          particle[@_Y] += particle[@_VY] * timeSteps
+          particle[@_X] += (particle[@_VX] or 0) * timeSteps
+          particle[@_Y] += (particle[@_VY] or 0) * timeSteps
       else
         for j in @getValidChildIndicesByIndex i
           addVelocities j
       return
     addVelocities index
-    fixTree = (i) ->
+    fixTree = (i) =>
       if @isLeaf i
         x = @nodes[i][@_X]
         y = @nodes[i][@_Y]
         for own id, particle of @nodes[i][@_PARTICLES]
-          if int(particle[@_X]) isnt x or int(particle[@_Y]) isnt y
-            @removeParticle x, y, id
+          if particle[@_X] // 1 isnt x or particle[@_Y] // 1 isnt y
+            particle = @removeParticle x, y, id
             @addParticle particle...
       else
         for j in @getValidChildIndicesByIndex i
@@ -286,7 +303,9 @@ class ParticleTree extends Quadtree
     fixTree index
     return
 
-  update: (timeSteps) =>
+  update: (timeSteps) ->
     @_accelerateParticles timeSteps
     @_moveParticles timeSteps
     return
+
+module.exports.ParticleTree = ParticleTree
