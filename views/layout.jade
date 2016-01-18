@@ -1,0 +1,19 @@
+doctype html
+html
+  head
+    title= title
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(href='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css', rel='stylesheet', media='screen')
+    link(rel='stylesheet', href='/stylesheets/style.css')
+  body
+    nav(class='navbar navbar-default', id='nav')
+      ul(class='nav navbar-nav navbar-right')
+        if (!user)
+          li: a(href='/login') Login
+        if (user)
+          li: a(href='/login') Logout
+
+    block content
+
+  script(src='http://code.jquery.com/jquery.js')
+  //script(src='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js')
