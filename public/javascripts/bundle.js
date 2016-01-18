@@ -37,8 +37,6 @@
 
   document.getElementById('nav').style['border-radius'] = '0';
 
-  document.getElementById('nav').style.color = '#FFF';
-
   document.getElementById('nav').style['background-color'] = '#AAA';
 
   ref = document.getElementById('nav').getElementsByTagName('a');
