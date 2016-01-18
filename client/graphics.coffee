@@ -17,7 +17,6 @@ renderer.autoResize = true
 document.getElementById('nav').style.margin = '0'
 document.getElementById('nav').style.border = '0'
 document.getElementById('nav').style['border-radius'] = '0'
-document.getElementById('nav').style.color = '#FFF'
 document.getElementById('nav').style['background-color'] = '#AAA'
 
 for a in document.getElementById('nav').getElementsByTagName 'a'
