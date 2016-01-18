@@ -10,14 +10,11 @@ particleTree = new ParticleTree config.WIDTH,
 
 particleQueue = require('./queue')()
 
-mainLoop = ->
-  mouse = Graphics.renderer.plugins.interaction.mouse
-  mouseLoc = mouse.getLocalPosition Graphics.gameContainer
-  if mouse.originalEvent?.type is "mousedown"
-    particleTree.addParticle mouseLoc.x, mouseLoc.y
-    #console.log "particle added at (#{mouseLoc.x}, #{mouseLoc.y})"
-  console.log "particle count: #{particleTree._particleCount}"
+Graphics.gameContainer.mouseup = Graphics.gameContainer.touchend = (args) ->
+  localPoint = Graphics.gameContainer.toLocal args.data.global
+  particleTree.addParticle localPoint.x, localPoint.y
 
+mainLoop = ->
   particleTree.update 1
   Graphics.render particleTree
   requestAnimationFrame mainLoop

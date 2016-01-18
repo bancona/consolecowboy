@@ -2,7 +2,7 @@
 (function() {
   module.exports = {
     WIDTH: 1024,
-    HEGIHT: 1024,
+    HEIGHT: 1024,
     BACKGROUND: 0x000000,
     MAX_PARTICLES: 1000
   };

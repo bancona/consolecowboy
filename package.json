@@ -1,10 +1,26 @@
 {
-  "name": "iap_project",
+  "name": "iap-project",
   "version": "1.0.0",
   "description": "consolecowboysincyberspace",
+  "private": true,
   "main": "app.js",
   "dependencies": {
-    "express": "4.13.3",
+    "bcrypt-nodejs": "0.0.3",
+    "body-parser": "~1.13.2",
+    "chai": "~1.8.1",
+    "cookie-parser": "~1.3.5",
+    "debug": "^2.2.0",
+    "express": "4.13.1",
+    "express-session": "^1.13.0",
+    "jade": "~1.11.0",
+    "mocha": "~1.14.0",
+    "mongoose": "^4.3.5",
+    "morgan": "~1.6.1",
+    "passport": "^0.3.2",
+    "passport-local": "^1.0.0",
+    "passport-local-mongoose": "^3.1.0",
+    "serve-favicon": "~2.3.0",
+    "should": "^8.1.1",
     "socket.io": "1.4.3"
   },
   "devDependencies": {
@@ -12,9 +28,9 @@
     "browserify": "10.2.6"
   },
   "scripts": {
-    "start": "node app.js",
+    "start": "node ./bin/www",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublish": "coffee -c . && browserify client/main.js -o public/bundle.js",
+    "prepublish": "coffee -c . && browserify client/main.js -o public/javascripts/bundle.js",
     "devstart": "npm run prepublish && npm start"
   },
   "repository": {
@@ -22,5 +38,5 @@
     "url": "git@github.mit.edu:mit6148-2016/consolecowboysincyberspace.git"
   },
   "author": "Alberto Ancona",
-  "license": "ISC"
+  "license": "MIT"
 }

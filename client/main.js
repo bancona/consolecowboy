@@ -17,14 +17,13 @@
 
   particleQueue = require('./queue')();
 
+  Graphics.gameContainer.mouseup = Graphics.gameContainer.touchend = function(args) {
+    var localPoint;
+    localPoint = Graphics.gameContainer.toLocal(args.data.global);
+    return particleTree.addParticle(localPoint.x, localPoint.y);
+  };
+
   mainLoop = function() {
-    var mouse, mouseLoc, ref;
-    mouse = Graphics.renderer.plugins.interaction.mouse;
-    mouseLoc = mouse.getLocalPosition(Graphics.gameContainer);
-    if (((ref = mouse.originalEvent) != null ? ref.type : void 0) === "mousedown") {
-      particleTree.addParticle(mouseLoc.x, mouseLoc.y);
-    }
-    console.log("particle count: " + particleTree._particleCount);
     particleTree.update(1);
     Graphics.render(particleTree);
     return requestAnimationFrame(mainLoop);
