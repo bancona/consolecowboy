@@ -14,31 +14,35 @@ stage.addChild gameContainer
 renderer = PIXI.autoDetectRenderer config.WIDTH, config.HEIGHT
 renderer.autoResize = true
 
-'''
-document.getElementById('nav').style.margin = '0'
-document.getElementById('nav').style.border = '0'
-document.getElementById('nav').style['border-radius'] = '0'
-document.getElementById('nav').style['background-color'] = '#AAA'
-
-for a in document.getElementById('nav').getElementsByTagName 'a'
-  a.style.color = '#FFF'
-  a.style['margin-right'] = '10px'
-'''
-
 document.body.appendChild renderer.view
+
+colors = {}
+getColor = (mass) ->
+  if mass in colors
+    colors[mass]
+  else
+    colors[mass] = ((20*mass) << 16) + ((8*mass) << 8) + (8*mass) + 0x111111
 
 render = (particleTree) =>
   gameContainer.clear()
-  drawParticles = (index) =>
+  do drawParticles = (index = 0) ->
     childIndices = particleTree.getValidChildIndicesByIndex index
-    if childIndices.length is 0
+    if childIndices.length is 0 # leaf
+      [x, y] = particleTree.convertIndexToCoordinates index
+      bounds = particleTree.bounds
       for id, particle of particleTree.nodes[index][particleTree._PARTICLES]
-        gameContainer.beginFill 0x111111 * particle[2]
-        gameContainer.drawCircle particle[0], particle[1], 5
+        radius = 2 + particle[2]
+        if bounds.x > x + radius or bounds.x + bounds.width < x - radius \
+            or bounds.y > y + radius or bounds.y + bounds.height < y - radius
+          console.log "shit"
+          continue
+        console.log "hello"
+        gameContainer.beginFill getColor particle[2]
+        gameContainer.drawCircle particle[0], particle[1], radius
     else
       for i in childIndices
         drawParticles i
-  drawParticles 0
+    return
   renderer.render stage
 
 module.exports.render = render
