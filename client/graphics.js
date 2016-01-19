@@ -46,10 +46,8 @@
             particle = ref1[id];
             radius = 2 + particle[2];
             if (bounds.x > x + radius || bounds.x + bounds.width < x - radius || bounds.y > y + radius || bounds.y + bounds.height < y - radius) {
-              console.log("shit");
               continue;
             }
-            console.log("hello");
             gameContainer.beginFill(getColor(particle[2]));
             gameContainer.drawCircle(particle[0], particle[1], radius);
           }

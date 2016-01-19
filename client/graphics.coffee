@@ -34,9 +34,7 @@ render = (particleTree) =>
         radius = 2 + particle[2]
         if bounds.x > x + radius or bounds.x + bounds.width < x - radius \
             or bounds.y > y + radius or bounds.y + bounds.height < y - radius
-          console.log "shit"
           continue
-        console.log "hello"
         gameContainer.beginFill getColor particle[2]
         gameContainer.drawCircle particle[0], particle[1], radius
     else

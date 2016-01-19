@@ -37,7 +37,13 @@ class Quadtree
 
   # Returns 0-indexed level in the quadtree, calculated from @nodes array index.
   getLevelByIndex: (index) ->
-    log2(3 * index + 1) // 2
+    #log2(3 * index + 1) // 2
+    i = -1
+    num = 3 * index + 1
+    while num != 0
+      num >>= 1
+      i += 1
+    i >> 1
 
   # Returns relative index of node at specified index; that is, if the node is
   # the first in a level, returns 0, if second then return 1, etc.
