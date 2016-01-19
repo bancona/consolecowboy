@@ -40,7 +40,14 @@
     };
 
     Quadtree.prototype.getLevelByIndex = function(index) {
-      return Math.floor(log2(3 * index + 1) / 2);
+      var i, num;
+      i = 0;
+      num = 3 * index + 1;
+      while (num !== 0) {
+        num >>= 1;
+        i += 1;
+      }
+      return (i - 1) >> 1;
     };
 
     Quadtree.prototype.getPositionInLevel = function(index, level) {

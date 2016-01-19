@@ -59,10 +59,8 @@
             particle = ref1[id];
             radius = 2 + particle[2];
             if (bounds.x > x + radius || bounds.x + bounds.width < x - radius || bounds.y > y + radius || bounds.y + bounds.height < y - radius) {
-              console.log("shit");
               continue;
             }
-            console.log("hello");
             gameContainer.beginFill(getColor(particle[2]));
             gameContainer.drawCircle(particle[0], particle[1], radius);
           }
@@ -173,7 +171,14 @@
     };
 
     Quadtree.prototype.getLevelByIndex = function(index) {
-      return Math.floor(log2(3 * index + 1) / 2);
+      var i, num;
+      i = 0;
+      num = 3 * index + 1;
+      while (num !== 0) {
+        num >>= 1;
+        i += 1;
+      }
+      return (i - 1) >> 1;
     };
 
     Quadtree.prototype.getPositionInLevel = function(index, level) {
