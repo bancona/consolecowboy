@@ -14,6 +14,7 @@ stage.addChild gameContainer
 renderer = PIXI.autoDetectRenderer config.WIDTH, config.HEIGHT
 renderer.autoResize = true
 
+'''
 document.getElementById('nav').style.margin = '0'
 document.getElementById('nav').style.border = '0'
 document.getElementById('nav').style['border-radius'] = '0'
@@ -22,6 +23,7 @@ document.getElementById('nav').style['background-color'] = '#AAA'
 for a in document.getElementById('nav').getElementsByTagName 'a'
   a.style.color = '#FFF'
   a.style['margin-right'] = '10px'
+'''
 
 document.body.appendChild renderer.view
 

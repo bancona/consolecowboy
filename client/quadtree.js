@@ -300,26 +300,18 @@
       size = this.size / Math.pow(2, level);
       nodeX *= size;
       nodeY *= size;
-      if ((nodeX < x0 && x0 < nodeX + size) || (nodeY < y0 && y0 < nodeY + size)) {
+      if ((nodeX < x0 && x0 < nodeX + size) || (nodeY < y0 && y0 < nodeY + size) || (nodeX < (ref1 = nodeY + x0 - y0) && ref1 < (nodeX + size)) || (nodeX < (ref2 = nodeY + size + x0 - y0) && ref2 < (nodeX + size)) || (nodeY < (ref3 = nodeX - x0 + y0) && ref3 < (nodeY + size)) || (nodeY < (ref4 = nodeX + size - x0 + y0) && ref4 < (nodeY + size)) || (nodeX < (ref5 = -nodeY + x0 - y0) && ref5 < (nodeX + size)) || (nodeX < (ref6 = -(nodeY + size) + x0 + y0) && ref6 < (nodeX + size)) || (nodeY < (ref7 = nodeX + x0 + y0) && ref7 < (nodeY + size)) || (nodeY < (ref8 = -(nodeX + size) + x0 + y0) && ref8 < (nodeY + size))) {
         return true;
+      } else {
+        return false;
       }
-      if ((nodeX < (ref1 = nodeY + x0 - y0) && ref1 < (nodeX + size)) || (nodeX < (ref2 = nodeY + size + x0 - y0) && ref2 < (nodeX + size)) || (nodeY < (ref3 = nodeX - x0 + y0) && ref3 < (nodeY + size)) || (nodeY < (ref4 = nodeX + size - x0 + y0) && ref4 < (nodeY + size))) {
-        return true;
-      }
-      if ((nodeX < (ref5 = -nodeY + x0 - y0) && ref5 < (nodeX + size)) || (nodeX < (ref6 = -(nodeY + size) + x0 + y0) && ref6 < (nodeX + size)) || (nodeY < (ref7 = nodeX + x0 + y0) && ref7 < (nodeY + size)) || (nodeY < (ref8 = -(nodeX + size) + x0 + y0) && ref8 < (nodeY + size))) {
-        return true;
-      }
-      return false;
     };
 
     ParticleTree.prototype._sumForces = function(x, y, id) {
       var getForce;
-      getForce = (function(_this) {
+      return (getForce = (function(_this) {
         return function(index) {
           var childForces, force, forceX, forceY, gMassR2, i, k, len, node, r2;
-          if (index == null) {
-            index = 0;
-          }
           if (_this._intercepts(x, y, index)) {
             childForces = (function() {
               var k, len, ref, results;
@@ -347,8 +339,7 @@
           }
           return [forceX, forceY];
         };
-      })(this);
-      return getForce();
+      })(this))(0);
     };
 
     ParticleTree.prototype._accelerateParticles = function(timeSteps, index) {
@@ -389,7 +380,7 @@
       if (index == null) {
         index = 0;
       }
-      addVelocities = (function(_this) {
+      (addVelocities = (function(_this) {
         return function(i) {
           var id, j, k, len, particle, ref, ref1, ref2, ref3, x, y;
           if (_this.isLeaf(i)) {
@@ -418,9 +409,8 @@
             }
           }
         };
-      })(this);
-      addVelocities(index);
-      fixTree = (function(_this) {
+      })(this))(index);
+      (fixTree = (function(_this) {
         return function(i) {
           var id, j, k, len, particle, ref, ref1, x, y;
           if (_this.isLeaf(i)) {
@@ -443,8 +433,7 @@
             }
           }
         };
-      })(this);
-      fixTree(index);
+      })(this))(index);
     };
 
     ParticleTree.prototype._combineParticles = function(index) {

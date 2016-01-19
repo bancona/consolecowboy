@@ -229,24 +229,25 @@ class ParticleTree extends Quadtree
     nodeX *= size
     nodeY *= size
     # Check horizontal and vertical:
-    if nodeX < x0 < nodeX + size or nodeY < y0 < nodeY + size
-      return true
+    if nodeX < x0 < nodeX + size or nodeY < y0 < nodeY + size or \
     # Check diagonals
-    if nodeX < (nodeY + x0 - y0) < (nodeX + size) or \
-       nodeX < (nodeY + size + x0 - y0) < (nodeX + size) or \
-       nodeY < (nodeX - x0 + y0) < (nodeY + size) or \
-       nodeY < (nodeX + size - x0 + y0) < (nodeY + size)
-      return true
-    if nodeX < (-nodeY + x0 - y0) < (nodeX + size) or \
-       nodeX < (-(nodeY + size) + x0 + y0) < (nodeX + size) or \
-       nodeY < (nodeX + x0 + y0) < (nodeY + size) or \
-       nodeY < (-(nodeX + size) + x0 + y0) < (nodeY + size)
-      return true
-    false
+        # y - y0 = x - x0
+        nodeX < (nodeY + x0 - y0) < (nodeX + size) or \
+        nodeX < (nodeY + size + x0 - y0) < (nodeX + size) or \
+        nodeY < (nodeX - x0 + y0) < (nodeY + size) or \
+        nodeY < (nodeX + size - x0 + y0) < (nodeY + size) or \
+        # y - y0 = x0 - x
+        nodeX < (-nodeY + x0 - y0) < (nodeX + size) or \
+        nodeX < (-(nodeY + size) + x0 + y0) < (nodeX + size) or \
+        nodeY < (nodeX + x0 + y0) < (nodeY + size) or \
+        nodeY < (-(nodeX + size) + x0 + y0) < (nodeY + size)
+      true
+    else
+      false
 
   #
   _sumForces: (x, y, id) ->
-    getForce = (index = 0) =>
+    do getForce = (index = 0) =>
       if @_intercepts x, y, index
         childForces = (getForce(i) for i in @getValidChildIndicesByIndex index)
         forceX = 0
@@ -261,7 +262,6 @@ class ParticleTree extends Quadtree
         forceX = (node[@_X] - x) * gMassR2
         forceY = (node[@_Y] - y) * gMassR2
       [forceX, forceY]
-    getForce()
 
   _accelerateParticles: (timeSteps, index = 0) ->
     if @isLeaf index
@@ -279,11 +279,11 @@ class ParticleTree extends Quadtree
           particle[@_VY] = sign * @MAX_VELOCITY
     else
       for i in @getValidChildIndicesByIndex index
-        @_accelerateParticles(timeSteps, i)
+        @_accelerateParticles timeSteps, i
     return
 
   _moveParticles: (timeSteps, index = 0) ->
-    addVelocities = (i) =>
+    do addVelocities = (i = index) =>
       if @isLeaf i
         x = @nodes[i][@_X]
         y = @nodes[i][@_Y]
@@ -300,8 +300,7 @@ class ParticleTree extends Quadtree
         for j in @getValidChildIndicesByIndex i
           addVelocities j
       return
-    addVelocities index
-    fixTree = (i) =>
+    do fixTree = (i = index) =>
       if @isLeaf i
         x = @nodes[i][@_X]
         y = @nodes[i][@_Y]
@@ -313,7 +312,6 @@ class ParticleTree extends Quadtree
         for j in @getValidChildIndicesByIndex i
           fixTree j
       return
-    fixTree index
     return
 
   _combineParticles: (index) ->
