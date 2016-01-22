@@ -38,10 +38,21 @@
 
   app.use(logger('dev'));
 
-  app.use(bodyParser.json());
+  app.use(bodyParser.json({
+    limit: '50mb'
+  }));
+
+  app.use(bodyParser.raw({
+    limit: '50mb'
+  }));
+
+  app.use(bodyParser.text({
+    limit: '50mb'
+  }));
 
   app.use(bodyParser.urlencoded({
-    extended: false
+    extended: false,
+    limit: '50mb'
   }));
 
   app.use(cookieParser());

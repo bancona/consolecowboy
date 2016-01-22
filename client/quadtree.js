@@ -488,28 +488,44 @@
     };
 
     ParticleTree.prototype.getParticles = function() {
-      var innerGetParticles, particles;
-      particles = {};
-      (innerGetParticles = (function(_this) {
+      var i, masses, storeParticles, vxs, vys, xs, ys;
+      xs = new Array(this._particleCount);
+      ys = new Array(this._particleCount);
+      masses = new Array(this._particleCount);
+      vxs = new Array(this._particleCount);
+      vys = new Array(this._particleCount);
+      i = 0;
+      (storeParticles = (function(_this) {
         return function(index) {
-          var i, id, k, len, particle, ref, ref1;
+          var id, j, k, len, particle, ref, ref1;
           if (_this.isLeaf(index)) {
             ref = _this.nodes[index][_this._PARTICLES];
             for (id in ref) {
               if (!hasProp.call(ref, id)) continue;
               particle = ref[id];
-              particles[id] = particle.slice(0);
+              xs[i] = Math.floor(particle[_this._X] / 1);
+              ys[i] = Math.floor(particle[_this._Y] / 1);
+              masses[i] = particle[_this._MASS];
+              vxs[i] = (Math.floor((particle[_this._VX] * 100) / 1)) / 100;
+              vys[i] = (Math.floor((particle[_this._VY] * 100) / 1)) / 100;
+              i += 1;
             }
           } else {
             ref1 = _this.getValidChildIndicesByIndex(index);
             for (k = 0, len = ref1.length; k < len; k++) {
-              i = ref1[k];
-              innerGetParticles(i);
+              j = ref1[k];
+              storeParticles(j);
             }
           }
         };
       })(this))(0);
-      return particles;
+      return {
+        xs: xs,
+        ys: ys,
+        masses: masses,
+        vxs: vxs,
+        vys: vys
+      };
     };
 
     return ParticleTree;

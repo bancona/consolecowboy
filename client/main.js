@@ -23,34 +23,9 @@
     particleTree.addParticle(localPt.x, localPt.y);
   };
 
-  Graphics.gameContainer.mousemove = function(args) {
-    var localPt;
-    localPt = Graphics.gameContainer.toLocal(args.data.global);
-    $('#mouselocation').html((localPt.x != null) && localPt.x >= 0 && (localPt.y != null) && localPt.y >= 0 ? "(" + (Math.floor(localPt.x / 1)) + ", " + (Math.floor(localPt.y / 1)) + ")" : '');
-  };
+  require('./mouse-location-watch')(Graphics.gameContainer);
 
-  document.takeSnapshot = function() {
-    var particles, snapshotElement;
-    particles = particleTree.getParticles();
-    snapshotElement = $('#snapshot');
-    snapshotElement.html('Taking Snapshot...');
-    $.ajax('/takesnapshot', {
-      type: 'POST',
-      data: particles,
-      success: function(data) {
-        snapshotElement.html(data.message);
-        setTimeout(function() {
-          snapshotElement.html('Take Snapshot');
-        }, 3000);
-      },
-      error: function() {
-        snapshotElement.html('Snapshot Failed. Please try again');
-        setTimeout(function() {
-          snapshotElement.html('Take Snapshot');
-        }, 3000);
-      }
-    });
-  };
+  document.takeSnapshot = require('./take-snapshot')(particleTree);
 
   (mainLoop = function() {
     particleTree.update(1);
