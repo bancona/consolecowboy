@@ -1,0 +1,11 @@
+extends layout
+block content
+  if (particles)
+    script.
+      document.particles = !{JSON.stringify(particles)}
+  if (!particles)
+    script.
+      document.location.href='/'
+  script(src='pixi.js-3.0.9/bin/pixi.min.js')
+  script(src='/socket.io/socket.io.js')
+  script(src='/javascripts/snapshot.js')

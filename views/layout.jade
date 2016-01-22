@@ -10,15 +10,16 @@ html
       ul(class='nav navbar-nav navbar-left')
         li: a(href='/', style='color:#FFF;font-weight:bold;') Console Cowboy's Particle Simulator
         li: a(id='mouselocation', style='color:#FFF;')
-      ul(class='nav navbar-nav navbar-right')
+      ul(class='nav navbar-nav navbar-right', id='right-navbar-list')
         if (!user)
           li: a(href='/login', style='margin-right:10px;color:#FFF;font-weight:bold;') Login
         if (user)
           li: a(style='margin-right:10px;color:#FFF;font-weight:bold;') Welcome, #{user.username}
-          //li: a(onclick='takeSnapshot();') Take Snapshot
+          li: a(href='/snapshots' style='margin-right:10px;color:#FFF;font-weight:bold;') View Snapshots
+          li: a(href='', onclick='document.takeSnapshot();return false;', id='snapshot', style='margin-right:10px;color:#FFF;font-weight:bold;') Take Snapshot
           li: a(href='/logout', style='margin-right:10px;color:#FFF;font-weight:bold;') Logout
 
+    script(src='http://code.jquery.com/jquery.js')
     block content
 
-  script(src='http://code.jquery.com/jquery.js')
   script(src='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js')

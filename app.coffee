@@ -11,9 +11,10 @@ LocalStrategy = require('passport-local').Strategy
 
 Account = require './models/account'
 routes = require './routes/index'
-users = require './routes/users'
-
 app = express()
+
+io = require('socket.io')()
+app.io = io
 
 # view engine setup
 app.set 'views', path.join __dirname, 'views'
@@ -26,7 +27,7 @@ app.use bodyParser.json()
 app.use bodyParser.urlencoded extended: false
 app.use cookieParser()
 app.use expressSession
-  secret: 'keyboard cat'
+  secret: 'mysecretthingy'
   resave: false
   saveUninitialized: false
 
@@ -40,7 +41,8 @@ passport.serializeUser Account.serializeUser()
 passport.deserializeUser Account.deserializeUser()
 
 # mongoose
-mongoose.connect process.env.dburl ? require './dburl'
+dburl = process.env.dburl ? require './dburl'
+mongoose.connect dburl
 
 app.use '/', routes
 

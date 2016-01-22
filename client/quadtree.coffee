@@ -350,4 +350,16 @@ class ParticleTree extends Quadtree
     @_moveParticles timeSteps
     return
 
+  getParticles: ->
+    particles = {}
+    do innerGetParticles = (index = 0) =>
+      if @isLeaf index
+        for own id, particle of @nodes[index][@_PARTICLES]
+          particles[id] = particle.slice 0
+      else
+        for i in @getValidChildIndicesByIndex index
+          innerGetParticles i
+      return
+    particles
+
 module.exports.ParticleTree = ParticleTree

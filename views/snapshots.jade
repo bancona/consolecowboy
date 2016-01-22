@@ -1,0 +1,17 @@
+extends layout
+
+block content
+  .container
+    h1 Snapshots
+    br
+    ul.list-group
+      -
+        // sort snapshots by date
+        user.snapshots.sort(function(a, b) {
+          return b.date.getTime() - a.date.getTime()
+        })
+      for snapshot in user.snapshots
+        li.list-group-item
+          = prettifyDate(snapshot.date) + ':  '
+          a(href='/snapshot?snapshotid=#{snapshot._id}')
+            = (snapshot.name || '<untitled>')

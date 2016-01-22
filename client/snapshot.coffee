@@ -2,8 +2,6 @@ Graphics = require './graphics'
 config = require './config'
 ParticleTree = require('./quadtree').ParticleTree
 
-socket = io()
-
 particleTree = new ParticleTree config.WIDTH,
   x: 0
   y: 0
@@ -24,9 +22,25 @@ Graphics.gameContainer.mousemove = (args) ->
       ''
   return
 
-document.takeSnapshot = ->
+snapshotReady = false
+snapshotElement = $ '#snapshot'
+snapshotElement.html 'Loading Snapshot...'
+for particle in document.particles
+  particleTree.addParticle(
+    particle.x,
+    particle.y,
+    particle.mass,
+    particle.vx,
+    particle.vy,
+    particle.id
+  )
+snapshotReady = true
+snapshotElement.html 'Take Snapshot'
+
+window.takeSnapshot = ->
+  unless snapshotReady
+    return
   particles = particleTree.getParticles()
-  snapshotElement = $ '#snapshot'
   snapshotElement.html 'Taking Snapshot...'
   $.ajax '/takesnapshot',
     type: 'POST'
@@ -35,7 +49,7 @@ document.takeSnapshot = ->
       snapshotElement.html data.message
       setTimeout(
         ->
-          snapshotElement.html('Take Snapshot')
+          snapshotElement.html 'Take Snapshot'
           return
         , 3000
       )
