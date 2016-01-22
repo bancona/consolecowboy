@@ -1,9 +1,9 @@
 extends layout
 block content
-  if (particles)
+  if (snapshotparticles)
     script.
-      document.particles = !{JSON.stringify(particles)}
-  if (!particles)
+      document.snapshotparticles = !{JSON.stringify(snapshotparticles)}
+  if (!snapshotparticles)
     script.
       document.location.href='/'
   script(src='pixi.js-3.0.9/bin/pixi.min.js')

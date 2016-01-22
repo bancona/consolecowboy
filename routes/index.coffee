@@ -60,21 +60,20 @@ router.get '/snapshot', (req, res) ->
     res.redirect '/'
   snapshot = (snapshot for snapshot in req.user.snapshots when snapshot._id+"" is req.query.snapshotid+"")[0]
   if snapshot
-    res.render 'snapshot', user: req.user, particles: snapshot.particles
+    res.render 'snapshot', user: req.user, snapshotparticles: snapshot.particles
   else
     res.redirect '/'
 
 convertToSnapshotModelInstance = (particles) ->
-  particleModelInstances = new Array Object.keys(particles).length
-  i = 0
-  for id, particle of particles
+  particleModelInstances = new Array particles.xs.length
+  for i in [0...particles.xs.length]
     particleModelInstances[i] = new Particle
-      x: particle[0]
-      y: particle[1]
-      mass: particle[2]
-      vx: particle[3]
-      vy: particle[4]
-    i += 1
+      x: particles.xs[i]
+      y: particles.ys[i]
+      mass: particles.masses[i]
+      vx: particles.vxs[i]
+      vy: particles.vys[i]
+
   new Snapshot particles: particleModelInstances
 
 router.post '/takesnapshot', (req, res) ->

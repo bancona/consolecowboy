@@ -351,15 +351,33 @@ class ParticleTree extends Quadtree
     return
 
   getParticles: ->
-    particles = {}
-    do innerGetParticles = (index = 0) =>
+    xs = new Array @_particleCount
+    ys = new Array @_particleCount
+    masses = new Array @_particleCount
+    vxs = new Array @_particleCount
+    vys = new Array @_particleCount
+    i = 0
+    do storeParticles = (index = 0) =>
       if @isLeaf index
         for own id, particle of @nodes[index][@_PARTICLES]
-          particles[id] = particle.slice 0
+          # To limit size, x and y values are saved to the nearest integer and
+          # vx and vy values are saved to the nearest hundredth.
+          xs[i] = particle[@_X] // 1
+          ys[i] = particle[@_Y] // 1
+          masses[i] = particle[@_MASS]
+          vxs[i] = ((particle[@_VX] * 100) // 1) / 100
+          vys[i] = ((particle[@_VY] * 100) // 1) / 100
+          i += 1
       else
-        for i in @getValidChildIndicesByIndex index
-          innerGetParticles i
+        for j in @getValidChildIndicesByIndex index
+          storeParticles j
       return
-    particles
+    return {
+      xs: xs
+      ys: ys
+      masses: masses
+      vxs: vxs
+      vys: vys
+    }
 
 module.exports.ParticleTree = ParticleTree

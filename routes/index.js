@@ -91,7 +91,7 @@
     if (snapshot) {
       return res.render('snapshot', {
         user: req.user,
-        particles: snapshot.particles
+        snapshotparticles: snapshot.particles
       });
     } else {
       return res.redirect('/');
@@ -99,19 +99,16 @@
   });
 
   convertToSnapshotModelInstance = function(particles) {
-    var i, id, particle, particleModelInstances;
-    particleModelInstances = new Array(Object.keys(particles).length);
-    i = 0;
-    for (id in particles) {
-      particle = particles[id];
+    var i, j, particleModelInstances, ref;
+    particleModelInstances = new Array(particles.xs.length);
+    for (i = j = 0, ref = particles.xs.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
       particleModelInstances[i] = new Particle({
-        x: particle[0],
-        y: particle[1],
-        mass: particle[2],
-        vx: particle[3],
-        vy: particle[4]
+        x: particles.xs[i],
+        y: particles.ys[i],
+        mass: particles.masses[i],
+        vx: particles.vxs[i],
+        vy: particles.vys[i]
       });
-      i += 1;
     }
     return new Snapshot({
       particles: particleModelInstances
