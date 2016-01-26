@@ -4,6 +4,8 @@ block content
   .container
     h1 Snapshots
     br
+    if (user.snapshots.length == 0)
+      p No snapshots yet!
     ul.list-group
       -
         // sort snapshots by date
