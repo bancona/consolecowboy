@@ -4,6 +4,8 @@ block content
   .container
     h1 Login
     br
+    if (attemptFail)
+      p(style='color:#F00') Username and password did not match. Please try again.
     form(role='form', action="/login",method="post", style='max-width: 300px;')
       .form-group
           input.form-control(type='text', name="username", placeholder='Enter Username')

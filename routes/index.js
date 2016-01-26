@@ -49,8 +49,24 @@
     });
   });
 
-  router.post('/login', passport.authenticate('local'), function(req, res) {
-    res.redirect('/');
+  router.post('/login', function(req, res, next) {
+    return passport.authenticate('local', function(err, user, info) {
+      if (err) {
+        return next(err);
+      } else if (!user) {
+        return res.render('login', {
+          attemptFail: true
+        });
+      } else {
+        return req.login(user, function(err) {
+          if (err) {
+            return next(err);
+          } else {
+            return res.redirect('/');
+          }
+        });
+      }
+    })(req, res, next);
   });
 
   router.get('/logout', function(req, res) {

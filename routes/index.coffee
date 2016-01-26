@@ -36,9 +36,19 @@ router.get '/login', (req, res) ->
   res.render 'login', user: req.user
   return
 
-router.post '/login', passport.authenticate('local'), (req, res) ->
-  res.redirect '/'
-  return
+router.post '/login', (req, res, next) ->
+  passport.authenticate('local', (err, user, info) ->
+    if err
+      next err
+    else if not user
+      res.render 'login', attemptFail: true
+    else
+      req.login user, (err) ->
+        if err
+          next err
+        else
+          res.redirect '/'
+  ) req, res, next
 
 router.get '/logout', (req, res) ->
   req.logout()
