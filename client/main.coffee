@@ -2,7 +2,7 @@ Graphics = require './graphics'
 config = require './config'
 ParticleTree = require('./quadtree').ParticleTree
 
-socket = io()
+#socket = io()
 
 particleTree = new ParticleTree config.WIDTH,
   x: 0
