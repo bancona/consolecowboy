@@ -1,3 +1,5 @@
+// Part of this was from http://mherman.org/blog/2015/01/31/local-authentication-with-passport-and-express-4/#.VqcELiorKM_
+// See README
 doctype html
 html
   head
@@ -18,7 +20,8 @@ html
           li: a(style='margin-right:10px;color:#FFF;font-weight:bold;') Welcome, #{user.username}
           li: a(href='/snapshots' style='margin-right:10px;color:#FFF;font-weight:bold;') View Snapshots
           li: a(href='#', onclick='document.takeSnapshot();return false;', id='snapshot', style='margin-right:10px;color:#FFF;font-weight:bold;')
-          li: a(href='/logout', style='margin-right:10px;color:#FFF;font-weight:bold;') Logout
+          li: a(href='/logout', style='color:#FFF;font-weight:bold;') Logout
+        li: a(href='https://github.mit.edu/mit6148-2016/consolecowboysincyberspace/blob/master/README.md', style='margin-right:10px;color:#FFF;font-weight:bold;') About
 
     script(src='http://code.jquery.com/jquery.js')
     block content

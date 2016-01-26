@@ -19,6 +19,8 @@ router.get '/register', (req, res) ->
   return
 
 router.post '/register', (req, res) ->
+  # From http://mherman.org/blog/2015/01/31/local-authentication-with-passport-and-express-4/#.VqcELiorKM_
+  # See README
   Account.register(
     new Account(username: req.body.username),
     req.body.password,
