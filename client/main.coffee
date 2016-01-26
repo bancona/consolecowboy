@@ -10,6 +10,13 @@ particleTree = new ParticleTree config.WIDTH,
   width: config.WIDTH
   height: config.WIDTH
 
+$('#hint').html 'Click anywhere to start!'
+
+Graphics.gameContainer.mousedown = ->
+  $('#hint').html ''
+  Graphics.gameContainer.mousedown = ->
+  return
+
 Graphics.gameContainer.mouseup = Graphics.gameContainer.touchend = (args) ->
   localPt = Graphics.gameContainer.toLocal args.data.global
   particleTree.addParticle localPt.x, localPt.y

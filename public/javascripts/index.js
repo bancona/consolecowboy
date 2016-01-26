@@ -105,6 +105,13 @@
     height: config.WIDTH
   });
 
+  $('#hint').html('Click anywhere to start!');
+
+  Graphics.gameContainer.mousedown = function() {
+    $('#hint').html('');
+    Graphics.gameContainer.mousedown = function() {};
+  };
+
   Graphics.gameContainer.mouseup = Graphics.gameContainer.touchend = function(args) {
     var localPt;
     localPt = Graphics.gameContainer.toLocal(args.data.global);
