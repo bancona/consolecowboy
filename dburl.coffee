@@ -1,0 +1,1 @@
+module.exports = 'mongodb://bancona:7/SEP/1995@ds045475.mongolab.com:45475/6148iap2016'
