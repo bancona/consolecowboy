@@ -16,7 +16,7 @@ html
         if (user)
           li: a(style='margin-right:10px;color:#FFF;font-weight:bold;') Welcome, #{user.username}
           li: a(href='/snapshots' style='margin-right:10px;color:#FFF;font-weight:bold;') View Snapshots
-          li: a(href='#', onclick='document.takeSnapshot();return false;', id='snapshot', style='margin-right:10px;color:#FFF;font-weight:bold;') Take Snapshot
+          li: a(href='#', onclick='document.takeSnapshot();return false;', id='snapshot', style='margin-right:10px;color:#FFF;font-weight:bold;')
           li: a(href='/logout', style='margin-right:10px;color:#FFF;font-weight:bold;') Logout
 
     script(src='http://code.jquery.com/jquery.js')
