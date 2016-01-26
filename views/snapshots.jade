@@ -14,6 +14,5 @@ block content
         })
       for snapshot in user.snapshots
         li.list-group-item
-          = prettifyDate(snapshot.date) + ':  '
           a(href='/snapshot?snapshotid=#{snapshot._id}')
-            = (snapshot.name || '<untitled>')
+            = prettifyDate(snapshot.date)
