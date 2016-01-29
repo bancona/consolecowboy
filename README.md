@@ -1,5 +1,5 @@
-Console Cowboys In Cyberspace
------------------------------
+Console Cowboys In Cyberspace (Name Subject to Change)
+------------------------------------------------------
 
 ####Particle simulator and art project by Alberto Ancona
 
