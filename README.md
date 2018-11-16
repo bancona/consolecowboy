@@ -11,7 +11,7 @@ well-placed particles and your imagination.
 In its current iteration, the site allows you to create your own little galaxy
 by clicking on the screen and introducing particles to the empty canvas of
 space. If you create an account and log in, you may save your progress at any
-time by clicking "Take Snapshot." The website is live [here](http://consolecowboy.azurewebsites.net).
+time by clicking "Take Snapshot." The website is live [here](https://consolecowboy.herokuapp.com/).
 
 The site is still under development, and I will soon implement a shared galaxy
 where anyone can contribute, as well as private galaxies for you and your
